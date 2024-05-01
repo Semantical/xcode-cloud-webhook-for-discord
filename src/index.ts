@@ -69,9 +69,9 @@ const getDiscordEmbed = (
 };
 
 const getEmojiForApp = (appName: string) => {
-	if (appName.includes("Now Dev")) {
+	if (appName.includes("Now-Dev")) {
 		return assets.now_dev;
-	} else if (appName.includes("Today Dev")) {
+	} else if (appName.includes("Today-Dev")) {
 		return assets.today_dev;
 	} else if (appName.includes("Now")) {
 		return assets.now;
@@ -129,7 +129,7 @@ app.post("/", async (req, res) => {
 	const embed = getDiscordEmbed(
 		appName,
 		"✅ Build succeeded",
-		`[TestFlight](itms-beta://beta.itunes.apple.com/v1/app/${app.id})`,
+		undefined,
 		`Build ${buildNumber}`,
 		buildURL,
 		"success"
