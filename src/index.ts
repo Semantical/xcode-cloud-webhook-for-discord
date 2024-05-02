@@ -9,6 +9,9 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// https://discord.com/developers/docs/resources/channel#message-object-message-flags
+const SUPPRESS_NOTIFICATIONS = 1 << 12;
+
 const assets = {
 	now: {
 		emote: null,
@@ -28,11 +31,17 @@ const assets = {
 	},
 };
 
-const sendDiscordNotification = async (embed: any, silent: boolean = false) => {
+const sendDiscordNotification = async (
+	embed: any,
+	isSilent: boolean = false
+) => {
 	try {
 		const response = await axios.post(
 			`${process.env.DISCORD_WEBHOOK_URL}?wait=true`,
-			{ content: silent ? "@silent" : undefined, embeds: [embed] }
+			{
+				embeds: [embed],
+				flags: isSilent ? SUPPRESS_NOTIFICATIONS : undefined,
+			}
 		);
 		console.log("Discord response:", response.status, response.statusText);
 		if (response.status !== 200) {
@@ -58,7 +67,7 @@ const getDiscordEmbed = (
 	return {
 		author: {
 			name: app,
-			icon_url: getEmojiForApp(app)?.image,
+			icon_url: getPropertyForApp(app, assets)?.image,
 		},
 		title,
 		description,
@@ -68,18 +77,10 @@ const getDiscordEmbed = (
 	};
 };
 
-const getEmojiForApp = (appName: string) => {
-	if (appName.includes("Now-Dev")) {
-		return assets.now_dev;
-	} else if (appName.includes("Today-Dev")) {
-		return assets.today_dev;
-	} else if (appName.includes("Now")) {
-		return assets.now;
-	} else if (appName.includes("Today")) {
-		return assets.today;
-	}
-	return null;
-};
+function getPropertyForApp<T>(appName: string, object: Record<string, T>) {
+	const property = appName.toLowerCase().replaceAll(/-/g, "_");
+	return object[property];
+}
 
 app.post("/", async (req, res) => {
 	console.log("Environment Variables", {
@@ -134,7 +135,7 @@ app.post("/", async (req, res) => {
 		buildURL,
 		"success"
 	);
-	const sent = await sendDiscordNotification(embed);
+	const sent = await sendDiscordNotification(embed, true);
 	return res.status(sent ? 200 : 500).send("Notification sent");
 });
 
