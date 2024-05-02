@@ -12,6 +12,13 @@ app.use(express.urlencoded({ extended: true }));
 // https://discord.com/developers/docs/resources/channel#message-object-message-flags
 const SUPPRESS_NOTIFICATIONS = 1 << 12;
 
+const roles = {
+	now: "<@&1235585182057107500>",
+	now_dev: "<@&1235585182057107500>",
+	today: "<@&1235585216404525137>",
+	today_dev: "<@&1235585216404525137>",
+};
+
 const assets = {
 	now: {
 		emote: null,
@@ -33,12 +40,14 @@ const assets = {
 
 const sendDiscordNotification = async (
 	embed: any,
-	isSilent: boolean = false
+	isSilent: boolean = false,
+	content: string | undefined = undefined
 ) => {
 	try {
 		const response = await axios.post(
 			`${process.env.DISCORD_WEBHOOK_URL}?wait=true`,
 			{
+				content,
 				embeds: [embed],
 				flags: isSilent ? SUPPRESS_NOTIFICATIONS : undefined,
 			}
@@ -115,6 +124,7 @@ app.post("/", async (req, res) => {
 
 	if (completionStatus !== "SUCCEEDED") {
 		console.log("Build failed");
+		const mention = getPropertyForApp(appName, roles);
 		const embed = getDiscordEmbed(
 			appName,
 			"❌ Build failed",
@@ -123,7 +133,7 @@ app.post("/", async (req, res) => {
 			buildURL,
 			"failure"
 		);
-		const sent = await sendDiscordNotification(embed);
+		const sent = await sendDiscordNotification(embed, false, mention);
 		return res.status(sent ? 200 : 500).send("Notification sent");
 	}
 
